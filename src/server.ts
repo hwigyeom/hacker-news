@@ -2,7 +2,7 @@ import express, { NextFunction, Request, Response } from 'express';
 import path from 'path';
 import axios from 'axios';
 import morgan from 'morgan';
-import dateFns from 'date-fns';
+import * as dateFns from 'date-fns';
 import { type AddressInfo } from 'net';
 
 const app = express();
@@ -20,6 +20,12 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 app.set('view engine', 'pug');
 
 app.locals.dateFns = dateFns;
+
+app.get('/', (req, res) => {
+  res.render('home', {
+    title: 'Search Hacker News',
+  });
+});
 
 async function searchHN(query: string) {
   const response = await axios.get(`https://hn.algolia.com/api/v1/search?query=${query}&tags=story&hitsPerPage=90`);
@@ -61,7 +67,7 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   res.status(500).send('<h1>Internal Server Error</h1>');
 });
 
-// app.set('views', path.join(__dirname, '..', 'views'));
+app.set('views', path.join(__dirname, 'views'));
 
 const server = app.listen(process.env.PORT || 3000, () => {
   console.log(`Hacker news server started on port: ${(server.address() as AddressInfo).port}`);
