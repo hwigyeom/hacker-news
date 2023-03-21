@@ -1,9 +1,9 @@
 import express, { NextFunction, Request, Response } from 'express';
 import path from 'path';
-import axios from 'axios';
 import morgan from 'morgan';
 import * as dateFns from 'date-fns';
 import { type AddressInfo } from 'net';
+import searchHackerNews from '@src/lib/hackerNewsProvider';
 
 const app = express();
 
@@ -28,8 +28,7 @@ app.get('/', (req, res) => {
 });
 
 async function searchHN(query: string) {
-  const response = await axios.get(`https://hn.algolia.com/api/v1/search?query=${query}&tags=story&hitsPerPage=90`);
-  return response.data;
+  return await searchHackerNews(query);
 }
 
 app.get('/search', async (req, res, next) => {
@@ -42,15 +41,12 @@ app.get('/search', async (req, res, next) => {
       searchQuery = req.query.q;
     }
 
-    console.log('searchQuery', searchQuery);
-
     if (!searchQuery || searchQuery.trim() === '') {
       res.redirect(302, '/');
       return;
     }
 
     const results = await searchHN(searchQuery);
-    console.log('results', results);
     res.render('search', {
       title: `Search result for: ${searchQuery}`,
       searchResults: results,
@@ -61,7 +57,8 @@ app.get('/search', async (req, res, next) => {
   }
 });
 
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   console.error(err);
   res.set('Content-Type', 'text/html');
   res.status(500).send('<h1>Internal Server Error</h1>');
