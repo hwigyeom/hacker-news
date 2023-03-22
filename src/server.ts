@@ -1,11 +1,13 @@
-import express, { NextFunction, Request, Response } from 'express';
-import path from 'path';
-import morgan from 'morgan';
-import * as dateFns from 'date-fns';
 import { type AddressInfo } from 'net';
-import searchHackerNews, { HackerNewsSearchResult } from '@src/lib/hackerNewsProvider';
-import Redis from 'ioredis';
+import path from 'path';
+
+import * as dateFns from 'date-fns';
+import express, { NextFunction, Request, Response } from 'express';
+import { Redis } from 'ioredis';
+import morgan from 'morgan';
+
 import HackerNewsCache from '@src/lib/HackerNewsCache';
+import searchHackerNews, { HackerNewsSearchResult } from '@src/lib/hackerNewsProvider';
 
 const app = express();
 const redis = new Redis();
@@ -18,6 +20,7 @@ const morganMiddleware = morgan(':method :url :status :res[content-length] - :re
 
 app.use(morganMiddleware);
 
+// eslint-disable-next-line import/no-named-as-default-member
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 app.set('view engine', 'pug');
@@ -47,7 +50,7 @@ app.get('/search', async (req, res, next) => {
 
     const cache = new HackerNewsCache(redis);
 
-    let results: HackerNewsSearchResult | null = null;
+    let results: HackerNewsSearchResult | null;
 
     results = await cache.getHackerNewsSearchResult(searchQuery);
     if (results) {

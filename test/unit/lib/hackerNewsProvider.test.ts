@@ -1,5 +1,7 @@
 import axios from 'axios';
+
 import searchHackerNews, { BASE_URL, HackerNewsSearchResult } from '@src/lib/hackerNewsProvider';
+
 import { NodeJSQueriedResults } from './resources/hackerNewsResources';
 
 jest.mock('axios');
