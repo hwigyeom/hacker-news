@@ -1,0 +1,10 @@
+config:
+  target: "http://localhost:3000"
+  phases: # 30초 동안 초당 10명의 가상 유저를 통한 로드 발생
+    - duration: 30
+      arrivalRate: 10
+scenarios:
+  - name: "Search HN for Programming content"
+    flow:
+      - get:
+          url: "/search?q=Programming"

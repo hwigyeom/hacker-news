@@ -1,12 +1,16 @@
 {
   "extends": "@tsconfig/node18/tsconfig.json",
   "compilerOptions": {
-    "allowJs": true,
-    "checkJs": true,
-    "outDir": "dist"
+    "baseUrl": ".",
+    "outDir": "dist",
+    "paths": {
+      "@src/*": ["src/*"]
+    }
   },
   "include": [
-    "src/**/*"
+    "src/**/*",
+    "test/**/*",
+    "jest.config.ts"
   ],
   "exclude": [
     "node_modules"

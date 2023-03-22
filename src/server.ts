@@ -1,11 +1,16 @@
-import express, { NextFunction, Request, Response } from 'express';
-import path from 'path';
-import axios from 'axios';
-import morgan from 'morgan';
-import * as dateFns from 'date-fns';
 import { type AddressInfo } from 'net';
+import path from 'path';
+
+import * as dateFns from 'date-fns';
+import express, { NextFunction, Request, Response } from 'express';
+import { Redis } from 'ioredis';
+import morgan from 'morgan';
+
+import HackerNewsCache from '@src/lib/HackerNewsCache';
+import searchHackerNews, { HackerNewsSearchResult } from '@src/lib/hackerNewsProvider';
 
 const app = express();
+const redis = new Redis();
 
 const morganMiddleware = morgan(':method :url :status :res[content-length] - :response-time ms', {
   stream: {
@@ -15,6 +20,7 @@ const morganMiddleware = morgan(':method :url :status :res[content-length] - :re
 
 app.use(morganMiddleware);
 
+// eslint-disable-next-line import/no-named-as-default-member
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 app.set('view engine', 'pug');
@@ -27,11 +33,6 @@ app.get('/', (req, res) => {
   });
 });
 
-async function searchHN(query: string) {
-  const response = await axios.get(`https://hn.algolia.com/api/v1/search?query=${query}&tags=story&hitsPerPage=90`);
-  return response.data;
-}
-
 app.get('/search', async (req, res, next) => {
   try {
     let searchQuery: string | undefined;
@@ -42,15 +43,24 @@ app.get('/search', async (req, res, next) => {
       searchQuery = req.query.q;
     }
 
-    console.log('searchQuery', searchQuery);
-
     if (!searchQuery || searchQuery.trim() === '') {
       res.redirect(302, '/');
       return;
     }
 
-    const results = await searchHN(searchQuery);
-    console.log('results', results);
+    const cache = new HackerNewsCache(redis);
+
+    let results: HackerNewsSearchResult | null;
+
+    results = await cache.getHackerNewsSearchResult(searchQuery);
+    if (results) {
+      console.log('Cache hit:', searchQuery);
+    } else {
+      console.log('Cache miss:', searchQuery);
+      results = await searchHackerNews(searchQuery);
+      await cache.setHackerNewsSearchResult(searchQuery, results);
+    }
+
     res.render('search', {
       title: `Search result for: ${searchQuery}`,
       searchResults: results,
@@ -61,7 +71,8 @@ app.get('/search', async (req, res, next) => {
   }
 });
 
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   console.error(err);
   res.set('Content-Type', 'text/html');
   res.status(500).send('<h1>Internal Server Error</h1>');

@@ -4,7 +4,8 @@
 This project was built against the following versions:
 - Node.js v18.15.0
 - yarn v1.22.19
-- Typescript v5.0.2
+- Typescript v4.9.5
+- Redis v7.0.10
 
 ## Getting started
 
