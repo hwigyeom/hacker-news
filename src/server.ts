@@ -3,9 +3,12 @@ import path from 'path';
 import morgan from 'morgan';
 import * as dateFns from 'date-fns';
 import { type AddressInfo } from 'net';
-import searchHackerNews from '@src/lib/hackerNewsProvider';
+import searchHackerNews, { HackerNewsSearchResult } from '@src/lib/hackerNewsProvider';
+import Redis from 'ioredis';
+import HackerNewsCache from '@src/lib/HackerNewsCache';
 
 const app = express();
+const redis = new Redis();
 
 const morganMiddleware = morgan(':method :url :status :res[content-length] - :response-time ms', {
   stream: {
@@ -46,7 +49,19 @@ app.get('/search', async (req, res, next) => {
       return;
     }
 
-    const results = await searchHN(searchQuery);
+    const cache = new HackerNewsCache(redis);
+
+    let results: HackerNewsSearchResult | null = null;
+
+    results = await cache.getHackerNewsSearchResult(searchQuery);
+    if (results) {
+      console.log('Cache hit:', searchQuery);
+    } else {
+      console.log('Cache miss:', searchQuery);
+      results = await searchHackerNews(searchQuery);
+      await cache.setHackerNewsSearchResult(searchQuery, results);
+    }
+
     res.render('search', {
       title: `Search result for: ${searchQuery}`,
       searchResults: results,
