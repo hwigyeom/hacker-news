@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { Logger } from 'pino';
 
 export const BASE_URL = 'https://hn.algolia.com/api/v1/search';
 
@@ -32,8 +33,9 @@ export type HackerNewsItem = {
 /**
  * Hacker News의 검색 API를 호출하여 뉴스 데이터를 가져온다.
  * @param query 검색어
+ * @param logger 로거
  */
-export default async function searchHackerNews(query: string): Promise<HackerNewsSearchResult> {
+export default async function searchHackerNews(query: string, logger?: Logger): Promise<HackerNewsSearchResult> {
   // host와 query를 분리하여 url을 만든다.
   const url = new URL(BASE_URL);
   url.searchParams.append('query', query);
@@ -45,7 +47,7 @@ export default async function searchHackerNews(query: string): Promise<HackerNew
     const response = await axios.get(url.href);
     return response.data as HackerNewsSearchResult;
   } catch (err) {
-    console.error(err);
+    logger?.error(err);
     throw err;
   }
 }
