@@ -30,10 +30,6 @@ app.get('/', (req, res) => {
   });
 });
 
-async function searchHN(query: string) {
-  return await searchHackerNews(query);
-}
-
 app.get('/search', async (req, res, next) => {
   try {
     let searchQuery: string | undefined;
