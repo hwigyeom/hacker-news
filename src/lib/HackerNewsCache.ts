@@ -1,4 +1,5 @@
 import { Redis } from 'ioredis';
+
 import { HackerNewsSearchResult } from '@src/lib/hackerNewsProvider';
 
 export default class HackerNewsCache {
@@ -18,5 +19,3 @@ export default class HackerNewsCache {
     await this.redis.set(key, JSON.stringify(result), 'EX', 300);
   }
 }
-
-export { HackerNewsCache };
