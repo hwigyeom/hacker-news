@@ -1,4 +1,5 @@
-import { Redis } from 'ioredis';
+// eslint-disable-next-line import/no-named-as-default
+import Redis from 'ioredis';
 
 import HackerNewsCache from '@src/lib/HackerNewsCache';
 
