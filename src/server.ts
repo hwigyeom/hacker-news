@@ -4,21 +4,16 @@ import path from 'path';
 import * as dateFns from 'date-fns';
 import express, { NextFunction, Request, Response } from 'express';
 import { Redis } from 'ioredis';
-import morgan from 'morgan';
+import { pinoHttp } from 'pino-http';
 
 import HackerNewsCache from '@src/lib/HackerNewsCache';
 import searchHackerNews, { HackerNewsSearchResult } from '@src/lib/hackerNewsProvider';
 
 const app = express();
+const pino = pinoHttp(process.env.NODE_ENV === 'production' ? {} : { transport: { target: 'pino-pretty' } });
 const redis = new Redis();
 
-const morganMiddleware = morgan(':method :url :status :res[content-length] - :response-time ms', {
-  stream: {
-    write: (message) => console.log(message.trim()),
-  },
-});
-
-app.use(morganMiddleware);
+app.use(pino);
 
 // eslint-disable-next-line import/no-named-as-default-member
 app.use(express.static(path.join(__dirname, '..', 'public')));
@@ -54,10 +49,10 @@ app.get('/search', async (req, res, next) => {
 
     results = await cache.getHackerNewsSearchResult(searchQuery);
     if (results) {
-      console.log('Cache hit:', searchQuery);
+      req.log.info('Cache hit:', searchQuery);
     } else {
-      console.log('Cache miss:', searchQuery);
-      results = await searchHackerNews(searchQuery);
+      req.log.info('Cache miss:', searchQuery);
+      results = await searchHackerNews(searchQuery, pino.logger);
       await cache.setHackerNewsSearchResult(searchQuery, results);
     }
 
@@ -73,7 +68,7 @@ app.get('/search', async (req, res, next) => {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
-  console.error(err);
+  req.log.error(err);
   res.set('Content-Type', 'text/html');
   res.status(500).send('<h1>Internal Server Error</h1>');
 });
@@ -81,5 +76,5 @@ app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
 app.set('views', path.join(__dirname, 'views'));
 
 const server = app.listen(process.env.PORT || 3000, () => {
-  console.log(`Hacker news server started on port: ${(server.address() as AddressInfo).port}`);
+  pino.logger.info(`Hacker news server started on port: ${(server.address() as AddressInfo).port}`);
 });
