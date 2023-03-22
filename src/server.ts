@@ -4,22 +4,11 @@ import morgan from 'morgan';
 import * as dateFns from 'date-fns';
 import { type AddressInfo } from 'net';
 import searchHackerNews, { HackerNewsSearchResult } from '@src/lib/hackerNewsProvider';
-import * as redis from 'redis';
+import Redis from 'ioredis';
+import HackerNewsCache from '@src/lib/HackerNewsCache';
 
 const app = express();
-const redisClient = redis.createClient({ socket: { port: 6379 } }); // 참고: https://github.com/redis/node-redis/blob/HEAD/docs/client-configuration.md
-
-(async () => {
-  redisClient.on('error', (err) => {
-    console.error('Redis Client Error', err);
-  });
-  redisClient.on('ready', () => {
-    console.log('Redis is Ready');
-  });
-
-  await redisClient.connect();
-  await redisClient.ping();
-})();
+const redis = new Redis();
 
 const morganMiddleware = morgan(':method :url :status :res[content-length] - :response-time ms', {
   stream: {
@@ -60,18 +49,17 @@ app.get('/search', async (req, res, next) => {
       return;
     }
 
+    const cache = new HackerNewsCache(redis);
+
     let results: HackerNewsSearchResult | null = null;
 
-    const key = `search:${searchQuery.toLowerCase()}`;
-
-    const value = await redisClient.get(key);
-    if (value) {
-      results = JSON.parse(value);
-      console.log('Cache hit for', key);
+    results = await cache.getHackerNewsSearchResult(searchQuery);
+    if (results) {
+      console.log('Cache hit:', searchQuery);
     } else {
-      console.log('Cache miss for', key);
-      results = await searchHN(searchQuery);
-      await redisClient.setEx(key, 300, JSON.stringify(results));
+      console.log('Cache miss:', searchQuery);
+      results = await searchHackerNews(searchQuery);
+      await cache.setHackerNewsSearchResult(searchQuery, results);
     }
 
     res.render('search', {
