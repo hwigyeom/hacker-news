@@ -8,9 +8,7 @@
     }
   },
   "include": [
-    "src/**/*",
-    "test/**/*",
-    "jest.config.ts"
+    "src/**/*"
   ],
   "exclude": [
     "node_modules"
