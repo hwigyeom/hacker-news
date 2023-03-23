@@ -30,6 +30,7 @@ app.get('/', (req, res) => {
 
 app.get('/search', async (req, res, next) => {
   try {
+    console.log('Request handled by process:', process.env.NODE_APP_INSTANCE);
     let searchQuery: string | undefined;
 
     if (Array.isArray(req.query.q)) {
@@ -49,9 +50,9 @@ app.get('/search', async (req, res, next) => {
 
     results = await cache.getHackerNewsSearchResult(searchQuery);
     if (results) {
-      req.log.info('Cache hit:', searchQuery);
+      req.log.info(`Cache hit: ${searchQuery}`);
     } else {
-      req.log.info('Cache miss:', searchQuery);
+      req.log.info(`Cache miss: ${searchQuery}`);
       results = await searchHackerNews(searchQuery, pino.logger);
       await cache.setHackerNewsSearchResult(searchQuery, results);
     }
@@ -73,8 +74,22 @@ app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   res.status(500).send('<h1>Internal Server Error</h1>');
 });
 
-app.set('views', path.join(__dirname, 'views'));
+app.set('views', path.join(__dirname, '..', 'views'));
 
 const server = app.listen(process.env.PORT || 3000, () => {
   pino.logger.info(`Hacker news server started on port: ${(server.address() as AddressInfo).port}`);
+
+  setTimeout(() => {
+    process.send?.('ready');
+  }, 1000);
 });
+
+function cleanupAndExit() {
+  server.close(() => {
+    pino.logger.info('Hacker news server closed.');
+    process.exit(0);
+  });
+}
+
+process.on('SIGINT', cleanupAndExit);
+process.on('SIGTERM', cleanupAndExit);
