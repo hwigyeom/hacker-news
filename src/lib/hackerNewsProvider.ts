@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Logger } from 'pino';
+import type { Logger } from 'winston';
 
 export const BASE_URL = 'https://hn.algolia.com/api/v1/search';
 
