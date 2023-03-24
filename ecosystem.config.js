@@ -11,6 +11,8 @@ module.exports = {
       exp_backoff_restart_delay: 100, // 100ms
       exec_mode: 'cluster',
       instances: -1,
+      out_file: '/dev/null',
+      error_file: '/dev/null',
     },
   ],
 };
