@@ -15,9 +15,11 @@ const jestConfig: JestConfigWithTsJest = {
       statements: 80,
     },
   },
+  detectOpenHandles: true,
   moduleNameMapper: {
     '^@src/(.*)$': '<rootDir>/src/$1',
   },
 };
 
+// noinspection JSUnusedGlobalSymbols
 export default jestConfig;

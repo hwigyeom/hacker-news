@@ -3,7 +3,7 @@ import Redis from 'ioredis';
 
 import HackerNewsCache from '@src/lib/HackerNewsCache';
 
-import { NodeJSQueriedResults } from './resources/hackerNewsResources';
+import { NodeJSQueriedResults } from '../../resources/hackerNewsResources';
 
 jest.mock('ioredis');
 

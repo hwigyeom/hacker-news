@@ -1,4 +1,4 @@
-import type { HackerNewsSearchResult } from '@src/lib/hackerNewsProvider';
+import type { HackerNewsSearchResult } from '../../src/lib/hackerNewsProvider';
 
 // 'node.js' 를 검색어로 정상적인 검색 결과를 반환받을때의 데이터
 export const NodeJSQueriedResults: HackerNewsSearchResult = {
