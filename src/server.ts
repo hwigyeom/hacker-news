@@ -16,13 +16,11 @@ dotenv.config({ path: path.join(__dirname, '..', '.env.local'), override: true }
 
 const app = express();
 
-/* eslint-disable import/no-named-as-default-member */
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
   format: winston.format.json(),
   transports: [new winston.transports.Console()],
 });
-/* eslint-enable import/no-named-as-default-member */
 
 logger.debug(`System timezone is: ${Intl.DateTimeFormat().resolvedOptions().timeZone}`);
 
@@ -106,7 +104,11 @@ app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
 
 app.set('views', path.join(__dirname, '..', 'views'));
 
-const server = app.listen(process.env.PORT || 3000, () => {
+const defaultPort = process.env.PORT || 3000;
+const port = process.env.NODE_APP_INSTANCE
+  ? Number(defaultPort) + Number(process.env.NODE_APP_INSTANCE)
+  : Number(defaultPort);
+const server = app.listen(port, () => {
   logger.info(`Hacker news server started on port: ${(server.address() as AddressInfo).port}`);
 
   setTimeout(() => {
