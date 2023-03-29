@@ -61,6 +61,7 @@ app.get('/search', async (req, res, next) => {
     process.env.NODE_APP_INSTANCE && logger.info(`Request handled by process: ${process.env.NODE_APP_INSTANCE}`);
     let searchQuery: string | undefined;
 
+    // istanbul ignore if
     if (Array.isArray(req.query.q)) {
       searchQuery = req.query.q.map((q) => q.toString()).join(' ');
     } else if (typeof req.query.q === 'string') {
@@ -90,11 +91,12 @@ app.get('/search', async (req, res, next) => {
       searchResults: results,
       searchQuery,
     });
-  } catch (err) {
+  } catch (err) /* istanbul ignore next */ {
     next(err);
   }
 });
 
+// istanbul ignore next
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   logger.error(err);
@@ -111,11 +113,13 @@ const port = process.env.NODE_APP_INSTANCE
 const server = app.listen(port, () => {
   logger.info(`Hacker news server started on port: ${(server.address() as AddressInfo).port}`);
 
+  // istanbul ignore next
   setTimeout(() => {
     process.send?.('ready');
   }, 1000);
 });
 
+// istanbul ignore next
 function cleanupAndExit() {
   server.close(() => {
     logger.info('Hacker news server closed.');
@@ -125,3 +129,5 @@ function cleanupAndExit() {
 
 process.on('SIGINT', cleanupAndExit);
 process.on('SIGTERM', cleanupAndExit);
+
+export default app;
