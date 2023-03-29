@@ -21,6 +21,7 @@
     "node": true
   },
   "rules": {
+    "import/no-named-as-default-member": "off",
     "import/order": [
       "error",
       {

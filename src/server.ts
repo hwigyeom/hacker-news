@@ -1,35 +1,54 @@
 import { type AddressInfo } from 'net';
 import path from 'path';
 
-import * as dateFns from 'date-fns';
+import dotenv from 'dotenv';
 import express, { NextFunction, Request, Response } from 'express';
 import { Redis } from 'ioredis';
+import { DateTime } from 'luxon';
 import morgan from 'morgan';
 import winston from 'winston';
 
 import HackerNewsCache from '@src/lib/HackerNewsCache';
 import searchHackerNews, { HackerNewsSearchResult } from '@src/lib/hackerNewsProvider';
 
+dotenv.config();
+dotenv.config({ path: path.join(__dirname, '..', '.env.local'), override: true });
+
 const app = express();
 
-/* eslint-disable import/no-named-as-default-member */
 const logger = winston.createLogger({
-  level: 'info',
+  level: process.env.LOG_LEVEL || 'info',
   format: winston.format.json(),
   transports: [new winston.transports.Console()],
 });
-/* eslint-enable import/no-named-as-default-member */
 
-app.use(morgan('short', { stream: { write: (message) => logger.info(message.trim()) } }));
+logger.debug(`System timezone is: ${Intl.DateTimeFormat().resolvedOptions().timeZone}`);
 
-const redis = new Redis();
+morgan.token('date', (req, res, tz?) => {
+  return DateTime.now()
+    .setZone(tz?.toString() || Intl.DateTimeFormat().resolvedOptions().timeZone)
+    .toISO();
+});
+
+app.use(
+  morgan(':remote-addr - :remote-user [:date] ":method :url HTTP/:http-version" :status :res[content-length]', {
+    stream: { write: (message) => logger.http(message.trim()) },
+  })
+);
+
+logger.debug(`Redis client connect to: ${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`);
+
+const redis = new Redis({
+  host: process.env.REDIS_HOST || 'localhost',
+  port: Number(process.env.REDIS_PORT) || 6379,
+});
 
 // eslint-disable-next-line import/no-named-as-default-member
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 app.set('view engine', 'pug');
 
-app.locals.dateFns = dateFns;
+app.locals.DateTime = DateTime;
 
 app.get('/', (req, res) => {
   res.render('home', {
@@ -85,7 +104,11 @@ app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
 
 app.set('views', path.join(__dirname, '..', 'views'));
 
-const server = app.listen(process.env.PORT || 3000, () => {
+const defaultPort = process.env.PORT || 3000;
+const port = process.env.NODE_APP_INSTANCE
+  ? Number(defaultPort) + Number(process.env.NODE_APP_INSTANCE)
+  : Number(defaultPort);
+const server = app.listen(port, () => {
   logger.info(`Hacker news server started on port: ${(server.address() as AddressInfo).port}`);
 
   setTimeout(() => {
